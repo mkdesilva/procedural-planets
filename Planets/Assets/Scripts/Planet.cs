@@ -3,17 +3,23 @@
 public class Planet : MonoBehaviour
 {
     [Range(2, 256)] public int resolution = 10;
+    public bool autoUpdate = true;
+
+    [SerializeField] public ShapeSettings shapeSettings;
+    [SerializeField] public ColourSettings colourSettings;
+
+    [HideInInspector] public bool shapeSettingsFoldout;
+    [HideInInspector] public bool colourSettingsFoldout;
+
+    private ShapeGenerator shapeGenerator;
+
     [SerializeField, HideInInspector] private MeshFilter[] meshFilters;
     private TerrainFace[] terrainFaces;
 
-    private void OnValidate()
-    {
-        Initialize();
-        GenerateMesh();
-    }
-
     private void Initialize()
     {
+        shapeGenerator = new ShapeGenerator(shapeSettings);
+
         const int numOfFaces = 6;
         if (meshFilters == null || meshFilters.Length == 0)
         {
@@ -35,8 +41,29 @@ public class Planet : MonoBehaviour
                 meshFilters[i].sharedMesh = new Mesh();
             }
 
-            terrainFaces[i] = new TerrainFace(meshFilters[i].sharedMesh, resolution, directions[i]);
+            terrainFaces[i] = new TerrainFace(shapeGenerator, meshFilters[i].sharedMesh, resolution, directions[i]);
         }
+    }
+
+    public void GeneratePlanet()
+    {
+        Initialize();
+        GenerateMesh();
+        GenerateColours();
+    }
+
+    public void OnShapeSettingsUpdated()
+    {
+        if (!autoUpdate) return;
+        Initialize();
+        GenerateMesh();
+    }
+
+    public void OnColourSettingsUpdated()
+    {
+        if (!autoUpdate) return;
+        Initialize();
+        GenerateColours();
     }
 
     private void GenerateMesh()
@@ -44,6 +71,14 @@ public class Planet : MonoBehaviour
         foreach (var face in terrainFaces)
         {
             face.ConstructMesh();
+        }
+    }
+
+    private void GenerateColours()
+    {
+        foreach (var meshFilter in meshFilters)
+        {
+            meshFilter.GetComponent<MeshRenderer>().sharedMaterial.color = colourSettings.planetColour;
         }
     }
 }
